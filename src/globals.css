@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Layer Forge Labs moss pole theme, as shadcn/ui tokens. The .dark block follows
+   shadcn's class strategy; the media query covers pages without a theme toggle. */
+@layer base {
+  :root {
+    --background: 110 14% 91%;
+    --foreground: 138 23% 11%;
+    --card: 90 18% 96%;
+    --card-foreground: 138 23% 11%;
+    --popover: 90 18% 96%;
+    --popover-foreground: 138 23% 11%;
+    --primary: 94 35% 28%;
+    --primary-foreground: 90 18% 96%;
+    --secondary: 92 19% 86%;
+    --secondary-foreground: 138 23% 11%;
+    --muted: 107 14% 87%;
+    --muted-foreground: 128 8% 37%;
+    --accent: 92 19% 86%;
+    --accent-foreground: 138 23% 11%;
+    --destructive: 3 71% 41%;
+    --destructive-foreground: 90 18% 96%;
+    --border: 106 12% 79%;
+    --input: 106 12% 79%;
+    --ring: 211 58% 44%;
+    --stage: 107 14% 87%;
+    --radius: 0.625rem;
+    color-scheme: light;
+  }
+  .dark, :root[data-theme="dark"] {
+    --background: 130 15% 8%;
+    --foreground: 113 19% 91%;
+    --card: 132 15% 13%;
+    --card-foreground: 113 19% 91%;
+    --popover: 132 15% 13%;
+    --popover-foreground: 113 19% 91%;
+    --primary: 86 37% 53%;
+    --primary-foreground: 130 15% 8%;
+    --secondary: 138 15% 17%;
+    --secondary-foreground: 113 19% 91%;
+    --muted: 138 15% 17%;
+    --muted-foreground: 128 9% 64%;
+    --accent: 138 15% 17%;
+    --accent-foreground: 113 19% 91%;
+    --destructive: 358 75% 59%;
+    --destructive-foreground: 130 15% 8%;
+    --border: 133 13% 21%;
+    --input: 131 12% 26%;
+    --ring: 212 77% 72%;
+    --stage: 133 16% 11%;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not(.light) {
+      --background: 130 15% 8%;
+      --foreground: 113 19% 91%;
+      --card: 132 15% 13%;
+      --card-foreground: 113 19% 91%;
+      --popover: 132 15% 13%;
+      --popover-foreground: 113 19% 91%;
+      --primary: 86 37% 53%;
+      --primary-foreground: 130 15% 8%;
+      --secondary: 138 15% 17%;
+      --secondary-foreground: 113 19% 91%;
+      --muted: 138 15% 17%;
+      --muted-foreground: 128 9% 64%;
+      --accent: 138 15% 17%;
+      --accent-foreground: 113 19% 91%;
+      --destructive: 358 75% 59%;
+      --destructive-foreground: 130 15% 8%;
+      --border: 133 13% 21%;
+      --input: 131 12% 26%;
+      --ring: 212 77% 72%;
+      --stage: 133 16% 11%;
+      color-scheme: dark;
+    }
+  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground antialiased; }
+}
+.swatch-glass { background-image: linear-gradient(135deg, rgba(255,255,255,.55) 0 30%, transparent 30% 60%, rgba(255,255,255,.35) 60%); }
