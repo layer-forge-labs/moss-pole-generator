@@ -1,4 +1,18 @@
 import type { ColorDef } from "./types";
+import PART_DATA from "./part-data.json";
+
+export const SIZES = {
+  S: { name: "Small",  W: 80,  D: 47, pot: [180, 150], note: "Pothos, philodendron, young monstera" },
+  M: { name: "Medium", W: 95,  D: 55, pot: [220, 175], note: "Most climbing plants" },
+  L: { name: "Large",  W: 115, D: 67, pot: [280, 210], note: "Mature monstera and big climbers" },
+} as const;
+export type SizeId = keyof typeof SIZES;
+export const BASES = {
+  none:  { name: "In your pot", note: "A 20 cm base section pushes into the soil of the pot you have." },
+  pot:   { name: "With our pot", note: "Ribbed pot and saucer; the pole locks into a socket at the back." },
+  spike: { name: "Spike", note: "Pushes into your pot's soil; the pole locks into its socket." },
+} as const;
+export type BaseId = keyof typeof BASES;
 
 // ---------------------------------------------------------------------------
 // Shop settings. Edit these; nothing else needs to change.
@@ -14,18 +28,8 @@ export const SHOP = {
     markup: 2.5,
     orderFee: 4,            // packing and finishing, once per order (charged)
     packingCost: 1.5,       // what packing actually costs you (box, filler, tape)
-    parts: {
-      base:       { grams: 108.8, hours: 7.93 },
-      section100: { grams: 56.1,  hours: 4.12 },
-      section200: { grams: 105.3, hours: 7.94 },
-      cup:        { grams: 54.9,  hours: 1.76 },
-      panel100a:  { grams: 9.8,   hours: 0.55 },
-      panel100b:  { grams: 11.3,  hours: 0.64 },
-      panel100c:  { grams: 10.9,  hours: 0.62 },
-      panel200a:  { grams: 18.4,  hours: 1.03 },
-      panel200b:  { grams: 21.1,  hours: 1.21 },
-      panel200c:  { grams: 20.6,  hours: 1.16 },
-    } as Record<string, { grams: number; hours: number }>,
+    // grams / hours per part and size, from slicing the print projects (filled in by the build)
+    parts: PART_DATA as Record<SizeId, Record<string, { grams: number; hours: number }>>,
   },
   colors: [
     { id: "olive",    name: "Olive green",       hex: "#5A6D3D", finish: "matte" },
@@ -36,7 +40,7 @@ export const SHOP = {
     { id: "oak",      name: "Oak",               hex: "#C2B29A", finish: "matte" },
     { id: "coffee",   name: "Coffee brown",      hex: "#362111", finish: "matte" },
   ] as ColorDef[],
-  defaultColors: { base: "olive", section: "olive", cup: "olive", panel: "olive_tr" },
+  defaultColors: { base: "olive", section: "olive", cup: "olive", knob: "olive", panel: "olive_tr", pot: "olive", saucer: "bone" },
   maxSections: 6,
   note: "Prices are estimates. We’ll confirm your final price before printing.",
 };

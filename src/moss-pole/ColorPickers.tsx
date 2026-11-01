@@ -12,8 +12,9 @@ const Dot = ({ id, className }: { id: string; className?: string }) => {
 };
 
 // One row of swatches. Label sits above, so all colors fit on one line.
-export function SwatchRow({ label, value, onChange, onHover }:
-  { label: string; value: string | null; onChange: (id: string) => void; onHover?: (on: boolean) => void }) {
+export function SwatchRow({ label, value, onChange, onHover, matteOnly }:
+  { label: string; value: string | null; onChange: (id: string) => void; onHover?: (on: boolean) => void; matteOnly?: boolean }) {
+  const list = SHOP.colors.filter(c => !matteOnly || c.finish === "matte");
   return (
     <div className="space-y-2" onPointerEnter={() => onHover?.(true)} onPointerLeave={() => onHover?.(false)}>
       <div className="flex items-baseline justify-between gap-3">
@@ -21,7 +22,7 @@ export function SwatchRow({ label, value, onChange, onHover }:
         <span className="text-sm text-muted-foreground">{value ? COLOR[value].name : "Mixed colors"}</span>
       </div>
       <div role="radiogroup" aria-label={`${label} color`} className="flex gap-2">
-        {SHOP.colors.map(c => (
+        {list.map(c => (
           <Tooltip key={c.id}>
             <TooltipTrigger asChild>
               <button role="radio" aria-checked={value === c.id} aria-label={c.name} onClick={() => onChange(c.id)}
@@ -39,14 +40,15 @@ export function SwatchRow({ label, value, onChange, onHover }:
 }
 
 // Compact dropdown with a swatch, for the per-part list.
-export function ColorSelect({ value, onChange, label }: { value: string; onChange: (id: string) => void; label: string }) {
+export function ColorSelect({ value, onChange, label, matteOnly }: { value: string; onChange: (id: string) => void; label: string; matteOnly?: boolean }) {
+  const list = SHOP.colors.filter(c => !matteOnly || c.finish === "matte");
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="h-9 w-[11.5rem]" aria-label={`${label} color`}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
-        {SHOP.colors.map(c => (
+        {list.map(c => (
           <SelectItem key={c.id} value={c.id}>
             <span className="flex items-center gap-2"><Dot id={c.id} className="size-4" />{c.name}</span>
           </SelectItem>

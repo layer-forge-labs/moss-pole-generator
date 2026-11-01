@@ -11,24 +11,26 @@ import { Separator } from "@/components/ui/separator";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { SHOP, PATTERNS, COLOR, type PatternId } from "./config";
+import { SHOP, PATTERNS, COLOR, SIZES, BASES, type PatternId, type SizeId, type BaseId } from "./config";
 import * as Dsg from "./design";
-import { loadParts, renderThumbs, type PartsSource } from "./parts";
+import { loadParts, renderThumbs, type SizeSources } from "./parts";
 import { PoleScene } from "./Scene";
 import { SwatchRow, ColorSelect } from "./ColorPickers";
 import { saveFile } from "./files";
 import { LfMark } from "./LfMark";
 import { AdminPricing } from "./AdminPricing";
 
+type Geos = Record<string, THREE.BufferGeometry>;
 type Props = {
-  parts: PartsSource;
-  /** Admin only: builds the Bambu Studio project. Leave out on the public site. */
-  exportProject?: (design: ReturnType<typeof Dsg.toDesign>) => Promise<{ name: string; data: Uint8Array }>;
+  parts: SizeSources;
+  /** Admin only: builds the Bambu Studio project(s). Leave out on the public site. */
+  exportProject?: (design: ReturnType<typeof Dsg.toDesign>, geos: Geos) => Promise<{ name: string; data: Uint8Array }>;
 };
 
 export function MossPoleConfigurator({ parts, exportProject }: Props) {
   const [state, setState] = React.useState(Dsg.initialState);
-  const [geos, setGeos] = React.useState<Record<string, THREE.BufferGeometry> | null>(null);
+  const [cache, setCache] = React.useState<Partial<Record<SizeId, Geos>>>({});
+  const geos = cache[state.size] ?? null;
   const [thumbs, setThumbs] = React.useState<Record<string, string>>({});
   const [loadError, setLoadError] = React.useState(false);
   const [explode, setExplode] = React.useState(0);
@@ -43,15 +45,22 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
   const [discount, setDiscount] = React.useState<Dsg.Discount>({ kind: "percent", value: 0 });
   const fileRef = React.useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
-    loadParts(parts).then(g => { setGeos(g); setThumbs(renderThumbs(g, Object.keys(PATTERNS))); }).catch(() => setLoadError(true));
-  }, [parts]);
+  React.useEffect(() => {          // load each size's parts the first time it is shown
+    if (cache[state.size]) return;
+    let live = true;
+    loadParts(parts[state.size]).then(g => {
+      if (!live) return;
+      setCache(c => ({ ...c, [state.size]: g }));
+      setThumbs(t => (Object.keys(t).length ? t : renderThumbs(g, Object.keys(PATTERNS))));
+    }).catch(() => setLoadError(true));
+    return () => { live = false; };
+  }, [parts, state.size, cache]);
   const say = (m: string) => { setToast(m); setTimeout(() => setToast(null), 1800); };
   const up = (f: (s: Dsg.State) => Dsg.State) => setState(s => f(s));
   const hover = (key: string) => (on: boolean) => setHl(on ? key : null);
 
   const n = state.sections.length;
-  const poleIds = [state.baseColor, ...state.sectionColors, ...(state.cup ? [state.cupColor] : [])];
+  const poleIds = [...(state.base === "none" ? [state.baseColor] : []), ...state.sectionColors, ...(state.cup ? [state.cupColor] : [])];
   const poleOne = poleIds.every(c => c === poleIds[0]) ? poleIds[0] : null;
   const panOne = state.panels.every(p => p.color === state.panels[0].color) ? state.panels[0].color : null;
   const totals = Dsg.orderTotals(state, admin ? markup : undefined, admin ? discount : undefined);
@@ -70,7 +79,8 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
   async function onExport() {
     if (!exportProject) return;
     setBusy(true);
-    try { const f = await exportProject(Dsg.toDesign(state)); const r = await saveFile(f.name, f.data); if (r !== "declined") say("Bambu project exported"); }
+    if (!geos) return;
+    try { const f = await exportProject(Dsg.toDesign(state), geos); const r = await saveFile(f.name, f.data); if (r !== "declined") say("Bambu project exported"); }
     catch (e: any) { say(e.message || "Export failed"); }
     finally { setBusy(false); }
   }
@@ -86,7 +96,7 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
           </div>
           <div className="pointer-events-none absolute bottom-5 left-6" aria-live="polite">
             <div className="text-[56px] font-extrabold leading-[0.9] tracking-tighter tabular-nums md:text-[clamp(56px,9vw,104px)]">{Dsg.heightCm(state)} cm</div>
-            <div className="mt-2 text-sm text-muted-foreground">Base + {n} section{n === 1 ? "" : "s"}, {state.panels.length} panels</div>
+            <div className="mt-2 text-sm text-muted-foreground">{SIZES[state.size].name}, {Dsg.heightNote(state)} · {n} section{n === 1 ? "" : "s"}, {state.panels.length} panels</div>
           </div>
           {!geos && <div className="absolute inset-0 grid place-items-center text-sm text-muted-foreground">{loadError ? "The 3D preview couldn’t load in this browser. You can still build your design." : "Loading parts…"}</div>}
           <div className="pointer-events-none absolute bottom-4 right-4 hidden text-xs text-muted-foreground sm:block">Drag to rotate, scroll to zoom</div>
@@ -100,8 +110,41 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
           </div>
 
           <section className="px-7 py-5">
+            <h2 className="text-lg font-bold">Size</h2>
+            <p className="mb-3 mt-1 text-sm text-muted-foreground">Width and depth of the pole. Sections are 10 or 20 cm tall in every size.</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Pole size">
+              {(Object.keys(SIZES) as SizeId[]).map(k => (
+                <button key={k} role="radio" aria-checked={state.size === k} onClick={() => up(s => ({ ...s, size: k }))}
+                  className={cn("rounded-lg border-2 bg-background px-2 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    state.size === k ? "border-primary" : "border-transparent hover:border-border")}>
+                  <span className="block font-semibold">{SIZES[k].name}</span>
+                  <span className="block text-xs tabular-nums text-muted-foreground">{(SIZES[k].W / 10).toFixed(1)} × {(SIZES[k].D / 10).toFixed(1)} cm</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{SIZES[state.size].note}</p>
+          </section>
+          <Separator />
+
+          <section className="px-7 py-5">
+            <h2 className="text-lg font-bold">Base</h2>
+            <p className="mb-3 mt-1 text-sm text-muted-foreground">How the pole stands.</p>
+            <div className="grid gap-2" role="radiogroup" aria-label="Base">
+              {(Object.keys(BASES) as BaseId[]).map(k => (
+                <button key={k} role="radio" aria-checked={state.base === k} onClick={() => up(s => Dsg.setBase(s, k))}
+                  className={cn("rounded-lg border-2 bg-background px-3 py-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    state.base === k ? "border-primary" : "border-transparent hover:border-border")}>
+                  <span className="block font-semibold">{BASES[k].name}{k === "pot" && <span className="ml-2 font-normal text-muted-foreground tabular-nums">Ø{SIZES[state.size].pot[0] / 10} cm</span>}</span>
+                  <span className="block text-sm text-muted-foreground">{BASES[k].note}</span>
+                </button>
+              ))}
+            </div>
+          </section>
+          <Separator />
+
+          <section className="px-7 py-5">
             <h2 className="text-lg font-bold">Sections</h2>
-            <p className="mb-4 mt-1 text-sm text-muted-foreground">The base goes in the pot. Add sections underneath the top one; you can add more later as the plant grows.</p>
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">Add sections underneath the top one; you can add more later as the plant grows.</p>
             <ul className="space-y-1.5">
               {state.cup && <Row muted><span className="flex-1 font-medium">Water cup</span><span className="text-sm text-muted-foreground">inside the top section</span></Row>}
               {[...state.sections.keys()].reverse().map(i => {
@@ -125,7 +168,8 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
                   </Row>
                 );
               })}
-              <Row muted><span className="flex-1 font-medium">Base</span><span className="text-sm text-muted-foreground">20 cm, goes in the pot</span></Row>
+              <Row muted><span className="flex-1 font-medium">{state.base === "pot" ? "Pot" : state.base === "spike" ? "Spike" : "Base"}</span>
+                <span className="text-sm text-muted-foreground">{state.base === "pot" ? `Ø${SIZES[state.size].pot[0] / 10} cm, with saucer` : state.base === "spike" ? "pushes into the soil" : "20 cm, goes in the pot"}</span></Row>
             </ul>
             <div className="mt-3 flex flex-wrap gap-2">
               {([100, 200] as const).map(h => (
@@ -173,7 +217,7 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold"><Label htmlFor="cup" className="text-lg font-bold">Water cup</Label></h2>
-                <p className="mt-1 text-sm text-muted-foreground">Sits inside the top section. Fill it and it drips slowly into the moss.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Sits inside the top section. Turn the knob on its lid to set how fast it drips into the moss.</p>
               </div>
               <Switch id="cup" checked={state.cup} onCheckedChange={v => up(s => ({ ...s, cup: v }))} />
             </div>
@@ -182,27 +226,40 @@ export function MossPoleConfigurator({ parts, exportProject }: Props) {
 
           <section className="px-7 py-5">
             <h2 className="text-lg font-bold">Colors</h2>
-            <p className="mb-4 mt-1 text-sm text-muted-foreground">All colors have a matte finish, except Translucent olive, which lets light through.</p>
+            <p className="mb-4 mt-1 text-sm text-muted-foreground">All colors have a matte finish, except Translucent olive, which lets light through{state.base !== "none" ? " (not available for the pot, saucer or spike)" : ""}.</p>
             <div className="space-y-5">
               <SwatchRow label="Pole" value={poleOne}
-                onChange={id => up(s => ({ ...s, baseColor: id, cupColor: id, sectionColors: s.sectionColors.map(() => id) }))} />
+                onChange={id => up(s => ({ ...s, baseColor: s.base === "none" ? id : s.baseColor, cupColor: id, sectionColors: s.sectionColors.map(() => id) }))} />
               <SwatchRow label="Panels" value={panOne}
                 onChange={id => up(s => ({ ...s, panels: s.panels.map(p => ({ ...p, color: id })) }))} />
+              {state.base !== "none" && <SwatchRow label={state.base === "pot" ? "Pot" : "Spike"} value={state.baseColor} matteOnly
+                onChange={id => up(s => ({ ...s, baseColor: id }))} onHover={hover("base")} />}
+              {state.base === "pot" && <SwatchRow label="Saucer" value={state.saucerColor} matteOnly
+                onChange={id => up(s => ({ ...s, saucerColor: id }))} onHover={hover("saucer")} />}
             </div>
             <Accordion type="single" collapsible className="mt-4 border-t">
               <AccordionItem value="parts" className="border-b-0">
                 <AccordionTrigger className="text-[15px] font-semibold">Choose a color for each part</AccordionTrigger>
                 <AccordionContent>
                   <PartList title="Pole, top to bottom">
-                    {state.cup && <PartRow label="Water cup" onHover={hover("cup")}><ColorSelect label="Water cup" value={state.cupColor} onChange={id => up(s => ({ ...s, cupColor: id }))} /></PartRow>}
+                    {state.cup && <PartRow label="Valve knob" onHover={hover("knob")}><ColorSelect label="Valve knob" value={state.knobColor} onChange={id => up(s => ({ ...s, knobColor: id }))} /></PartRow>}
+                    {state.cup && <PartRow label="Water cup" sub="with lid and valve stem" onHover={hover("cup")}><ColorSelect label="Water cup" value={state.cupColor} onChange={id => up(s => ({ ...s, cupColor: id }))} /></PartRow>}
                     {[...state.sections.keys()].reverse().map(i => (
                       <PartRow key={i} label={`Section ${i + 1}`} sub={`${state.sections[i] / 10} cm`} onHover={hover("sec" + i)}>
                         <ColorSelect label={`Section ${i + 1}`} value={state.sectionColors[i]}
                           onChange={id => up(s => ({ ...s, sectionColors: s.sectionColors.map((c, j) => (j === i ? id : c)) }))} />
                       </PartRow>
                     ))}
-                    <PartRow label="Base" sub="20 cm" onHover={hover("base")}><ColorSelect label="Base" value={state.baseColor} onChange={id => up(s => ({ ...s, baseColor: id }))} /></PartRow>
+                    {state.base === "none" && <PartRow label="Base" sub="20 cm" onHover={hover("base")}><ColorSelect label="Base" value={state.baseColor} onChange={id => up(s => ({ ...s, baseColor: id }))} /></PartRow>}
                   </PartList>
+                  {state.base !== "none" && (
+                    <PartList title={state.base === "pot" ? "Pot and saucer (matte colors)" : "Spike (matte colors)"}>
+                      <PartRow label={state.base === "pot" ? "Pot" : "Spike"} sub={SIZES[state.size].name} onHover={hover("base")}>
+                        <ColorSelect matteOnly label={state.base === "pot" ? "Pot" : "Spike"} value={state.baseColor} onChange={id => up(s => ({ ...s, baseColor: id }))} /></PartRow>
+                      {state.base === "pot" && <PartRow label="Saucer" onHover={hover("saucer")}>
+                        <ColorSelect matteOnly label="Saucer" value={state.saucerColor} onChange={id => up(s => ({ ...s, saucerColor: id }))} /></PartRow>}
+                    </PartList>
+                  )}
                   <PartList title="Panels, top to bottom">
                     {[...state.panels.keys()].reverse().map(i => (
                       <PartRow key={i} label={`${pos(i, state.panels.length)} panel`} sub={`${state.panels[i].size / 10} cm, ${PATTERNS[state.panels[i].pat]}`} onHover={hover("pan" + i)}>

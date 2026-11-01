@@ -1,0 +1,164 @@
+{
+ "S": {
+  "base": {
+   "grams": 90.99,
+   "hours": 6.84
+  },
+  "section200": {
+   "grams": 89.46,
+   "hours": 6.92
+  },
+  "section100": {
+   "grams": 47.62,
+   "hours": 3.6
+  },
+  "cup": {
+   "grams": 59.8,
+   "hours": 2.77
+  },
+  "panel200a": {
+   "grams": 15.94,
+   "hours": 0.88
+  },
+  "panel200b": {
+   "grams": 18.09,
+   "hours": 1.03
+  },
+  "panel200c": {
+   "grams": 18.22,
+   "hours": 1.01
+  },
+  "panel100a": {
+   "grams": 8.35,
+   "hours": 0.46
+  },
+  "panel100b": {
+   "grams": 9.55,
+   "hours": 0.54
+  },
+  "panel100c": {
+   "grams": 9.41,
+   "hours": 0.53
+  },
+  "pot": {
+   "grams": 374.8,
+   "hours": 7.14
+  },
+  "saucer": {
+   "grams": 93.9,
+   "hours": 1.48
+  },
+  "spike": {
+   "grams": 78.2,
+   "hours": 1.48
+  }
+ },
+ "M": {
+  "base": {
+   "grams": 108.0,
+   "hours": 7.91
+  },
+  "section200": {
+   "grams": 104.7,
+   "hours": 7.91
+  },
+  "section100": {
+   "grams": 55.9,
+   "hours": 4.1
+  },
+  "cup": {
+   "grams": 74.3,
+   "hours": 3.03
+  },
+  "panel200a": {
+   "grams": 18.2,
+   "hours": 1.02
+  },
+  "panel200b": {
+   "grams": 20.9,
+   "hours": 1.21
+  },
+  "panel200c": {
+   "grams": 20.4,
+   "hours": 1.16
+  },
+  "panel100a": {
+   "grams": 9.7,
+   "hours": 0.55
+  },
+  "panel100b": {
+   "grams": 11.2,
+   "hours": 0.64
+  },
+  "panel100c": {
+   "grams": 10.8,
+   "hours": 0.61
+  },
+  "pot": {
+   "grams": 533.7,
+   "hours": 10.14
+  },
+  "saucer": {
+   "grams": 133.5,
+   "hours": 2.07
+  },
+  "spike": {
+   "grams": 97.2,
+   "hours": 1.74
+  }
+ },
+ "L": {
+  "base": {
+   "grams": 132.88,
+   "hours": 9.44
+  },
+  "section200": {
+   "grams": 126.21,
+   "hours": 9.33
+  },
+  "section100": {
+   "grams": 67.57,
+   "hours": 4.81
+  },
+  "cup": {
+   "grams": 97.6,
+   "hours": 3.46
+  },
+  "panel200a": {
+   "grams": 20.04,
+   "hours": 1.13
+  },
+  "panel200b": {
+   "grams": 23.72,
+   "hours": 1.37
+  },
+  "panel200c": {
+   "grams": 22.27,
+   "hours": 1.28
+  },
+  "panel100a": {
+   "grams": 10.53,
+   "hours": 0.6
+  },
+  "panel100b": {
+   "grams": 12.36,
+   "hours": 0.72
+  },
+  "panel100c": {
+   "grams": 11.54,
+   "hours": 0.65
+  },
+  "spike": {
+   "grams": 126.6,
+   "hours": 2.16
+  },
+  "pot": {
+   "grams": 816.5,
+   "hours": 16.71
+  },
+  "saucer": {
+   "grams": 206.2,
+   "hours": 3.07
+  }
+ }
+}

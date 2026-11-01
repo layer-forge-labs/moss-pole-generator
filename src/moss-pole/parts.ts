@@ -1,9 +1,9 @@
 import * as THREE from "three";
 
-// Part meshes: quantized positions + indices, gzipped. On the site, serve the
-// two files from /public; in the standalone preview they are embedded.
+// Part meshes per size: quantized positions + indices, gzipped. On the site, serve
+// parts_S/M/L.bin + .json from /public; in the standalone preview they are embedded.
 export type PartsSource = { url: string; headerUrl: string } | { header: Hdr[]; base64: string };
-type Hdr = { name: string; vc: number; ic: number; voff: number; ioff: number; min: number[]; max: number[] };
+type Hdr = { name: string; vc: number; ic: number; it?: 2 | 4; voff: number; ioff: number; min: number[]; max: number[] };
 
 async function gunzip(bytes: Uint8Array): Promise<ArrayBuffer> {
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
@@ -26,7 +26,7 @@ export async function loadParts(src: PartsSource): Promise<Record<string, THREE.
       pos[i * 3 + k] = h.min[k] + (q[i * 3 + k] / 65535) * (h.max[k] - h.min[k]);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-    g.setIndex(new THREE.BufferAttribute(new Uint16Array(buf, h.ioff, h.ic), 1));
+    g.setIndex(new THREE.BufferAttribute(h.it === 4 ? new Uint32Array(buf, h.ioff, h.ic) : new Uint16Array(buf, h.ioff, h.ic), 1));
     g.computeBoundingBox();
     out[h.name] = g;
   }
@@ -34,6 +34,7 @@ export async function loadParts(src: PartsSource): Promise<Record<string, THREE.
 }
 
 // Pattern thumbnails rendered from the real panel meshes
+export type SizeSources = Record<"S" | "M" | "L", PartsSource>;
 export function renderThumbs(geos: Record<string, THREE.BufferGeometry>, ids: string[]): Record<string, string> {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   r.setSize(128, 140);
